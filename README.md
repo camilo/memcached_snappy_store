@@ -1,6 +1,6 @@
 # MemcachedSnappyStore
 
-TODO: Write a gem description
+ActiveSupport cache store that adds snappy compression at the cost of making the ```incr, decr, add``` operations unavailable. 
 
 ## Installation
 
@@ -18,7 +18,14 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+In your environment file:
+
+```ruby
+
+  config.cache_store = :memcached_snappy_store,  
+    Memcached::Rails.new(:servers => ['memcached1.foo.com', 'memcached2.foo.com']) 
+
+```
 
 ## Contributing
 
