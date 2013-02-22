@@ -62,6 +62,25 @@ class TestMemcachedSnappyStore < ActiveSupport::TestCase
     assert_equal entry_value, @cache.read(key)
   end
 
+  test "should skip snappy to reading not found" do
+    key = 'ponies2'
+    Snappy.expects(:inflate).never
+    assert_nil @cache.read(key)
+  end
+
+  test "should use snappy to multi read cache entries but not on missing entries" do
+    keys = %w{ one tow three }
+    values = keys.map{ |k| k * 10 }
+    entries = values.map{ |v| ActiveSupport::Cache::Entry.new(v) }
+
+    keys.each_with_index{ |k, i| @cache.write(k, values[i]) }
+
+    keys_and_missing = keys << 'missing'
+
+    Snappy.expects(:inflate).times(3).returns(*entries)
+    assert_equal values, @cache.read_multi(*keys_and_missing).values
+  end
+
   test "should use snappy to multi read cache entries" do
     keys = %w{ one tow three }
     values = keys.map{ |k| k * 10 }

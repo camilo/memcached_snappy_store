@@ -18,7 +18,7 @@ module ActiveSupport
         raw_values = @data.get_multi(keys_to_names.keys, :raw => true)
         values = {}
         raw_values.each do |key, compressed_value|
-          value = Snappy.inflate(compressed_value)
+          value = compressed_value.nil? ? compressed_value : Snappy.inflate(compressed_value)
           entry = deserialize_entry(value)
           values[keys_to_names[key]] = entry.value unless entry.expired?
         end
@@ -29,7 +29,7 @@ module ActiveSupport
 
       def read_entry(key, options)
         compressed_data = @data.get(escape_key(key), true)
-        data = Snappy.inflate(compressed_data)
+        data = compressed_data.nil? ? compressed_data : Snappy.inflate(compressed_data)
         deserialize_entry(data)
       rescue MemCache::MemCacheError => e
         logger.error("MemCacheError (#{e}): #{e.message}") if logger
