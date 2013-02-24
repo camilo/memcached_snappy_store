@@ -11,30 +11,7 @@ module ActiveSupport
         raise UnsupportedOperation.new("decrement is not supported by: #{self.class.name}")
       end
 
-      def read_multi(*names)
-        options = names.extract_options!
-        options = merged_options(options)
-        keys_to_names = Hash[names.map{|name| [escape_key(namespaced_key(name, options)), name]}]
-        raw_values = @data.get_multi(keys_to_names.keys, :raw => true)
-        values = {}
-        raw_values.each do |key, compressed_value|
-          value = compressed_value.nil? ? compressed_value : Snappy.inflate(compressed_value)
-          entry = deserialize_entry(value)
-          values[keys_to_names[key]] = entry.value unless entry.expired?
-        end
-        values
-      end
-
       protected
-
-      def read_entry(key, options)
-        compressed_data = @data.get(escape_key(key), true)
-        data = compressed_data.nil? ? compressed_data : Snappy.inflate(compressed_data)
-        deserialize_entry(data)
-      rescue MemCache::MemCacheError => e
-        logger.error("MemCacheError (#{e}): #{e.message}") if logger
-        nil
-      end
 
       def write_entry(key, entry, options)
         # normally unless_exist would make this method use add,  add will not make sense on compressed entries
@@ -56,6 +33,16 @@ module ActiveSupport
         logger.error("MemCacheError (#{e}): #{e.message}") if logger
         false
       end
+
+
+      def deserialize_entry_with_snappy(*args)
+        compressed_value = args.first
+        decompressed_value = compressed_value.nil? ? compressed_value : Snappy.inflate(compressed_value)
+        args[0] = decompressed_value
+        deserialize_entry_without_snappy(*args)
+      end
+
+      alias_method_chain :deserialize_entry, :snappy
     end
   end
 end
